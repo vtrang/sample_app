@@ -15,6 +15,7 @@ class UsersController < ApplicationController
   end
   
   def update
+    user_params[:admin] = 
     if @user.update_attributes(user_params)
       flash[:success] = "Profile updated"
       redirect_to @user
@@ -24,22 +25,27 @@ class UsersController < ApplicationController
   end
 
   def new
-  	@user = User.new
+    signed_in? ? redirect_to(root_url) : @user = User.new
   end
 
   def create
-  	@user = User.new(user_params)
-  	if @user.save
-      sign_in @user
-      flash[:success] = "Welcome to the Sample App!"
-      redirect_to @user
-  	else
-  		render 'new'
-  	end
+    if signed_in?
+      redirect_to(root_url) 
+    else
+    	@user = User.new(user_params)
+    	if @user.save
+        sign_in @user
+        flash[:success] = "Welcome to the Sample App!"
+        redirect_to @user
+    	else
+    		render 'new'
+    	end
+    end
   end
 
   def destroy
-    User.find(params[:id]).destroy
+    user = User.find(params[:id])
+    user.destroy unless user.admin?
     flash[:success] = "User deleted."
     redirect_to users_url
   end
@@ -51,7 +57,10 @@ class UsersController < ApplicationController
     end
 
     def signed_in_user
-      redirect_to signin_url, notice: "Please sign in." unless signed_in?
+      unless signed_in?
+        store_location
+        redirect_to signin_url, notice: "Please sign in."
+      end
     end
 
     def correct_user

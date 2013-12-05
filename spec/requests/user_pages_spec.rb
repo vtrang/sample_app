@@ -45,6 +45,13 @@ describe "UserPages" do
           end.to change(User, :count).by(-1)
         end
         it { should_not have_link('delete', href: user_path(admin)) }
+      
+        it "should not be able to delete yourself" do
+          expect do
+            sign_in admin, no_capybara: true
+            delete user_path(admin)
+          end.not_to change(User, :count).by(-1)
+        end
       end
     end
 
@@ -116,6 +123,18 @@ describe "UserPages" do
       visit edit_user_path(user)
     end
 
+    describe "forbidden attributes" do
+      let(:params) do
+        { user: { admin: true, password: user.password,
+                  password_confirmation: user.password } }
+      end
+      before do
+        sign_in user, no_capybara: true
+        patch user_path(user), params
+      end
+      specify { expect(user.reload).not_to be_admin }
+    end
+    
     describe "page" do
       it { should have_content("Update your profile") }
       it { should have_title("Edit user") }
